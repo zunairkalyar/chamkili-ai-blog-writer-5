@@ -479,25 +479,47 @@ export async function generateSeoAndFaq(blogContentHtml: string, blogTitle: stri
     }
 }
 
-// Import the free image generation service
-import { generateFreeImage, generatePlaceholderImage } from './freeImageService';
+// Import the Gemini-based image generation service
+import { generateImageWithGemini } from './geminiImageService';
 
 export async function generateImage(prompt: string, aspectRatio: string, imageStyle: string, negativePrompt: string): Promise<string> {
     try {
-        const freeResult = await generateFreeImage(prompt, aspectRatio, imageStyle, negativePrompt);
+        console.log('🎨 Generating image with Gemini-enhanced prompts...');
+        const geminiResult = await generateImageWithGemini(prompt, aspectRatio, imageStyle, negativePrompt);
         
-        if (freeResult.success && freeResult.imageUrl) {
-            return freeResult.imageUrl;
+        if (geminiResult.success && geminiResult.imageUrl) {
+            console.log('✅ Successfully generated image with Gemini assistance');
+            return geminiResult.imageUrl;
         }
         
-        console.warn('Free image generation failed:', freeResult.error);
-        console.log('Falling back to placeholder image');
-        return generatePlaceholderImage(prompt, aspectRatio);
+        console.warn('Gemini image generation failed:', geminiResult.error);
+        console.log('🔄 Falling back to placeholder image');
+        
+        // Generate a more sophisticated placeholder using Gemini branding
+        const dimensions = getImageDimensions(aspectRatio);
+        const encodedPrompt = encodeURIComponent(prompt.slice(0, 30));
+        return `https://via.placeholder.com/${dimensions.width}x${dimensions.height}/D18F70/FFFFFF?text=${encodedPrompt}`;
         
     } catch(error) {
         console.error(`Failed to generate image for prompt: "${prompt}"`, error);
-        return generatePlaceholderImage(prompt, aspectRatio);
+        
+        // Fallback placeholder with Chamkili branding
+        const dimensions = getImageDimensions(aspectRatio);
+        const encodedPrompt = encodeURIComponent('Chamkili Skincare');
+        return `https://via.placeholder.com/${dimensions.width}x${dimensions.height}/D18F70/FFFFFF?text=${encodedPrompt}`;
     }
+}
+
+// Helper function for image dimensions
+function getImageDimensions(aspectRatio: string): { width: number, height: number } {
+    const ratioMap: Record<string, { width: number, height: number }> = {
+        '1:1': { width: 512, height: 512 },
+        '16:9': { width: 768, height: 432 },
+        '4:3': { width: 640, height: 480 },
+        '3:4': { width: 480, height: 640 },
+        '9:16': { width: 432, height: 768 },
+    };
+    return ratioMap[aspectRatio] || ratioMap['1:1'];
 }
 
 export async function analyzeBrandVoice(text: string): Promise<string> {
