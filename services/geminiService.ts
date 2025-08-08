@@ -191,6 +191,35 @@ function getJsonModel(schema: any): GenerativeModel {
     });
 }
 
+export async function generateBlogTitleSuggestion(keywords: string = '', contentTemplate: string = 'Standard Blog Post', authorPersona: string = 'Beauty Guru', persona: CustomerPersona | null = null): Promise<string> {
+    const keywordsPrompt = keywords ? `Focus on these keywords: "${keywords}".` : 'Generate trending skincare and beauty topics for Pakistani audience.';
+    const personaPrompt = persona ? `Target this audience: ${persona.name} (${persona.age}), ${persona.occupation} from ${persona.location}. Interests: ${persona.skincareGoals.join(', ')}. Pain points: ${persona.painPoints.join(', ')}.` : 'Target Pakistani women interested in skincare and beauty.';
+    
+    const prompt = `You are a content strategist for Chamkili, a Pakistani skincare brand. Generate ONE compelling blog title that would perform well for SEO and engagement.
+
+**Requirements:**
+- Write as: ${authorPersona}
+- Content Type: ${contentTemplate}
+- ${keywordsPrompt}
+- ${personaPrompt}
+- Focus on Pakistani market and local skincare concerns
+- Make it engaging, clickable, and SEO-friendly
+- Include numbers, power words, or questions when appropriate
+- Length: 50-60 characters optimal for SEO
+
+**Examples of good titles:**
+- "5 Pakistani Skincare Secrets for Glowing Skin in 2024"
+- "How to Fix Acne Scars: Dermatologist-Approved Methods"
+- "Best Moisturizers for Karachi's Humid Weather"
+
+Return ONLY the title, nothing else.`;
+
+    const model = getSimpleModel();
+    const result = await model.generateContent(prompt);
+    const response = result.response;
+    return response.text().trim();
+}
+
 export async function generateBlogOutline(title: string, keywords: string, contentTemplate: string, authorPersona: string, brandVoiceProfile: string | null, persona: CustomerPersona | null): Promise<OutlineBlock[]> {
     const keywordsPrompt = keywords ? `The article should target these SEO keywords: "${keywords}".` : '';
     const brandVoicePrompt = brandVoiceProfile ? `**Brand Voice Profile:** ${brandVoiceProfile}` : '';

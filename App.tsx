@@ -18,6 +18,7 @@ import {
   generateCampaignEmail,
   generateCampaignAd,
   generateContentCalendar,
+  generateBlogTitleSuggestion,
   SeoFaqData,
   OutlineBlock,
   CampaignPlan,
@@ -232,6 +233,10 @@ const App: React.FC = () => {
   // Settings State
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const [geminiSettings, setGeminiSettings] = useState<GeminiSettings>(() => getCurrentSettings());
+
+  // Auto title suggestion state
+  const [isGeneratingTitle, setIsGeneratingTitle] = useState(false);
+  const [titleSuggestions, setTitleSuggestions] = useState<string[]>([]);
 
 
   useEffect(() => {
@@ -814,6 +819,46 @@ const App: React.FC = () => {
     localStorage.setItem('chamkiliGeminiSettings', JSON.stringify(settings));
   };
 
+  const handleGenerateTitleSuggestions = async () => {
+    if (appMode !== 'blog') return;
+    
+    setIsGeneratingTitle(true);
+    setTitleSuggestions([]);
+    
+    try {
+      // Generate 3 different title suggestions
+      const suggestions = await Promise.all([
+        generateBlogTitleSuggestion(seoKeywords, contentTemplate, authorPersona, customerPersona),
+        generateBlogTitleSuggestion(seoKeywords, contentTemplate, authorPersona, customerPersona),
+        generateBlogTitleSuggestion(seoKeywords, contentTemplate, authorPersona, customerPersona),
+      ]);
+      
+      setTitleSuggestions(suggestions.filter((title, index, arr) => 
+        arr.indexOf(title) === index // Remove duplicates
+      ));
+      
+      // Auto-fill with the first suggestion
+      if (suggestions[0] && suggestions[0].trim()) {
+        setBlogTitle(suggestions[0].trim());
+      }
+    } catch (err) {
+      console.error('Failed to generate title suggestions:', err);
+      // Generate a fallback title based on keywords or template
+      const fallbackTitle = seoKeywords 
+        ? `Ultimate Guide to ${seoKeywords.split(',')[0].trim()} for Pakistani Women`
+        : 'Best Skincare Tips for Glowing Skin in Pakistan';
+      setBlogTitle(fallbackTitle);
+      setTitleSuggestions([fallbackTitle]);
+    } finally {
+      setIsGeneratingTitle(false);
+    }
+  };
+
+  const handleUseTitleSuggestion = (suggestion: string) => {
+    setBlogTitle(suggestion);
+    setTitleSuggestions([]);
+  };
+
 
   const filteredHistory = useMemo(() => {
     if (!historySearchTerm.trim()) return history;
@@ -888,9 +933,59 @@ const App: React.FC = () => {
 
               <div className="space-y-4">
                 {appMode === 'blog' ? (
-                  <div>
-                    <label htmlFor={`${formId}-blogTitle`} className="block text-sm font-medium text-gray-700 mb-1">Blog Title</label>
-                    <input type="text" id={`${formId}-blogTitle`} value={blogTitle} onChange={(e) => setBlogTitle(e.target.value)} placeholder="e.g., How to get rid of acne scars" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C57F5D] focus:border-[#C57F5D] transition-shadow duration-200" disabled={mainButtonDisabled} />
+                  <div className="relative">
+                    <div className="flex items-center justify-between mb-1">
+                      <label htmlFor={`${formId}-blogTitle`} className="block text-sm font-medium text-gray-700">Blog Title</label>
+                      <button 
+                        onClick={handleGenerateTitleSuggestions} 
+                        disabled={isGeneratingTitle || mainButtonDisabled}
+                        className="text-xs text-[#C57F5D] hover:text-[#B56F52] font-semibold flex items-center gap-1 disabled:opacity-50"
+                      >
+                        {isGeneratingTitle ? (
+                          <>
+                            <svg className="animate-spin w-3 h-3" fill="none" viewBox="0 0 24 24">
+                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            Generating...
+                          </>
+                        ) : (
+                          <>
+                            <SparkleIcon className="w-3 h-3" />
+                            Auto-Suggest
+                          </>
+                        )}
+                      </button>
+                    </div>
+                    <input 
+                      type="text" 
+                      id={`${formId}-blogTitle`} 
+                      value={blogTitle} 
+                      onChange={(e) => setBlogTitle(e.target.value)} 
+                      placeholder="e.g., How to get rid of acne scars" 
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C57F5D] focus:border-[#C57F5D] transition-shadow duration-200" 
+                      disabled={mainButtonDisabled} 
+                    />
+                    {titleSuggestions.length > 0 && (
+                      <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-40 overflow-y-auto">
+                        <div className="p-2 text-xs text-gray-500 font-medium border-b">💡 AI Suggestions</div>
+                        {titleSuggestions.map((suggestion, index) => (
+                          <button
+                            key={index}
+                            onClick={() => handleUseTitleSuggestion(suggestion)}
+                            className="w-full text-left px-3 py-2 hover:bg-[#FFFBF5] text-sm border-b last:border-b-0 transition-colors"
+                          >
+                            <span className="text-gray-800">{suggestion}</span>
+                          </button>
+                        ))}
+                        <button
+                          onClick={() => setTitleSuggestions([])}
+                          className="w-full text-center px-3 py-2 text-xs text-gray-500 hover:bg-gray-50"
+                        >
+                          Close suggestions
+                        </button>
+                      </div>
+                    )}
                   </div>
                 ) : (
                    <div>
