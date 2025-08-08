@@ -1,0 +1,71 @@
+{
+  "schedule": {
+    "interval": "*/10 * * * *",
+    "description": "Every 10 minutes (modify using cron format)"
+  },
+  "gemini": {
+    "apiKey": "YOUR_GEMINI_API_KEY_HERE",
+    "model": "gemini-2.0-flash-exp"
+  },
+  "shopify": {
+    "storeName": "YOUR_SHOPIFY_STORE_NAME",
+    "accessToken": "YOUR_SHOPIFY_ACCESS_TOKEN"
+  },
+  "blogSettings": {
+    "topics": [
+      "Best Korean Skincare Routine for Pakistani Skin",
+      "How to Get Rid of Dark Spots Naturally in Pakistan",
+      "Vitamin C Serum Benefits for Oily Skin",
+      "Niacinamide vs Hyaluronic Acid: Which is Better",
+      "Summer Skincare Tips for Hot Pakistani Weather",
+      "Anti-Aging Skincare Routine for Women in Their 30s",
+      "How to Treat Acne Scars at Home",
+      "Best Night Skincare Routine for Glowing Skin",
+      "Retinol for Beginners: Complete Guide",
+      "DIY Face Masks for Pakistani Skin",
+      "Sunscreen Guide for Pakistani Climate",
+      "How to Build a Budget Skincare Routine",
+      "Skincare Ingredients to Avoid in Pakistan",
+      "Bridal Skincare Preparation in 3 Months",
+      "Winter Skincare Protection Tips",
+      "Best Serums for Hyperpigmentation",
+      "Skincare Routine for Sensitive Skin",
+      "How to Layer Skincare Products Correctly",
+      "Natural Remedies for Dry Skin in Pakistan",
+      "Makeup Primer vs Skincare Primer Guide"
+    ],
+    "tones": [
+      "Warm & Friendly",
+      "Professional", 
+      "Playful",
+      "Scientific",
+      "Empathetic"
+    ],
+    "contentTemplates": [
+      "Standard Blog Post",
+      "Step-by-Step Guide",
+      "Product Deep Dive",
+      "Myth Busting"
+    ],
+    "authorPersonas": [
+      "Beauty Guru",
+      "The Dermatologist",
+      "Skincare Scientist"
+    ],
+    "keywords": [
+      "skincare routine Pakistan",
+      "glowing skin tips",
+      "Pakistani beauty",
+      "skincare products Pakistan",
+      "natural skincare",
+      "acne treatment",
+      "anti-aging skincare",
+      "oily skin care",
+      "dry skin solutions"
+    ]
+  },
+  "logging": {
+    "enabled": true,
+    "level": "info"
+  }
+}

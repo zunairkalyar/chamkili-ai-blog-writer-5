@@ -1,0 +1,32 @@
+{
+  "name": "chamkili-auto-blog-poster",
+  "version": "1.0.0",
+  "description": "Automatic blog generation and publishing service for Chamkili store",
+  "main": "auto-poster.js",
+  "scripts": {
+    "start": "node auto-poster.js",
+    "dev": "nodemon auto-poster.js",
+    "install-deps": "npm install"
+  },
+  "keywords": [
+    "shopify",
+    "blog",
+    "automation",
+    "ai",
+    "gemini",
+    "chamkili"
+  ],
+  "author": "Chamkili Team",
+  "license": "MIT",
+  "dependencies": {
+    "@google/generative-ai": "^0.24.1",
+    "node-fetch": "^2.6.7",
+    "node-cron": "^3.0.2"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  }
+}
