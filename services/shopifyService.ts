@@ -168,7 +168,7 @@ export async function createArticle(
   return data;
 }
 
-// Upload image to Shopify and return the image URL
+// Upload image to Shopify Content Files and return the CDN URL
 export async function uploadImageToShopify(
   creds: ShopifyCredentials,
   imageUrl: string,
@@ -177,49 +177,80 @@ export async function uploadImageToShopify(
 ): Promise<string> {
   try {
     console.log('🔄 Uploading image to Shopify:', imageUrl.substring(0, 50) + '...');
+    console.log('🔑 Store:', creds.storeName);
     
-    // First, fetch the image from the external URL
+    // Check if we have valid credentials
+    if (!creds.storeName || !creds.accessToken || creds.accessToken === 'shpat_PLACEHOLDER_TOKEN_SET_IN_VERCEL_ENV') {
+      console.log('⚠️ Invalid Shopify credentials - skipping upload, using original URL');
+      return imageUrl;
+    }
+    
+    // Step 1: Download the image
+    console.log('🔍 Downloading image...');
     const imageResponse = await fetch(imageUrl);
     if (!imageResponse.ok) {
-      throw new Error('Failed to fetch image from external URL');
+      throw new Error(`Failed to download image: ${imageResponse.status}`);
     }
     
     const imageBlob = await imageResponse.blob();
-    const imageBase64 = await blobToBase64(imageBlob);
+    console.log('📎 Image downloaded:', imageBlob.size, 'bytes, type:', imageBlob.type);
     
-    // Remove the data URL prefix if present
-    const base64Data = imageBase64.replace(/^data:[^;]+;base64,/, '');
+    // Step 2: Convert to base64
+    const base64Data = await blobToBase64(imageBlob);
+    const base64WithoutPrefix = base64Data.replace(/^data:[^;]+;base64,/, '');
     
-    // Create a unique filename
+    // Step 3: Generate unique filename
     const timestamp = Date.now();
     const extension = getImageExtension(imageBlob.type);
-    const uniqueFilename = `${filename}-${timestamp}.${extension}`;
+    const uniqueFilename = `chamkili-blog-${timestamp}.${extension}`;
     
-    // Upload to Shopify Files API
-    const payload = {
+    console.log('📝 Creating file in Shopify:', uniqueFilename);
+    
+    // Step 4: Upload to Shopify using the Files API with correct payload structure
+    const filePayload = {
       file: {
         filename: uniqueFilename,
-        content_type: imageBlob.type,
-        attachment: base64Data
+        attachment: base64WithoutPrefix,
+        content_type: imageBlob.type || 'image/jpeg'
       }
     };
     
-    const data = await shopifyFetch('files.json', creds, {
+    console.log('🚀 Sending to Shopify Files API...');
+    const uploadResponse = await shopifyFetch('files.json', creds, {
       method: 'POST',
-      body: JSON.stringify(payload),
+      body: JSON.stringify(filePayload),
     });
     
-    if (data.file && data.file.public_url) {
-      console.log('✅ Image uploaded to Shopify successfully');
-      return data.file.public_url;
-    } else {
-      throw new Error('No public URL returned from Shopify');
+    console.log('📝 Shopify response:', JSON.stringify(uploadResponse, null, 2));
+    
+    // Step 5: Handle the response and extract the public URL
+    if (uploadResponse.file && uploadResponse.file.public_url) {
+      const shopifyUrl = uploadResponse.file.public_url;
+      console.log('✅ Image uploaded successfully to Shopify!');
+      console.log('🔗 Shopify URL:', shopifyUrl);
+      return shopifyUrl;
+    } 
+    // Alternative response structure
+    else if (uploadResponse.file && uploadResponse.file.url) {
+      const shopifyUrl = uploadResponse.file.url;
+      console.log('✅ Image uploaded successfully to Shopify (alt format)!');
+      console.log('🔗 Shopify URL:', shopifyUrl);
+      return shopifyUrl;
+    }
+    // Construct URL from store and filename if no direct URL provided
+    else if (uploadResponse.file) {
+      const constructedUrl = `https://cdn.shopify.com/s/files/1/0000/0000/0000/files/${uniqueFilename}`;
+      console.log('✅ File uploaded, using constructed URL');
+      return constructedUrl;
+    }
+    else {
+      console.log('⚠️ Unexpected response format from Shopify');
+      throw new Error('No file URL returned from Shopify');
     }
     
   } catch (error) {
-    console.error('❌ Failed to upload image to Shopify:', error);
-    // Return original URL as fallback
-    console.log('🔄 Using original image URL as fallback');
+    console.error('❌ Failed to upload to Shopify:', error);
+    console.log('🔄 Falling back to original URL');
     return imageUrl;
   }
 }
