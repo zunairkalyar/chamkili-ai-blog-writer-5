@@ -9,13 +9,13 @@ export interface GeminiSettings {
     model: string;
 }
 
-// Default settings
+// Default settings - using the lowest cost Gemini model
 const DEFAULT_SETTINGS: GeminiSettings = {
     apiKey: import.meta.env.VITE_GEMINI_API_KEY || 
             import.meta.env.VITE_API_KEY || 
             import.meta.env.GEMINI_API_KEY || 
             'AIzaSyA1deeG3-eG3vW8KmaZ-pcnSSdj9QppZPk', // Your Gemini API key
-    model: 'gemini-2.0-flash-exp'
+    model: 'gemini-1.5-flash' // Lowest cost model for maximum blog creation
 };
 
 // Global settings that can be updated

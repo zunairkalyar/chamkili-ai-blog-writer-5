@@ -95,10 +95,10 @@ async function generateWithExternalService(
     aspectRatio: string
 ): Promise<GeminiImageResult> {
     
-    // Try multiple services in order of preference
+    // Try multiple services in order of preference. Note: these are free services and can be unreliable.
+    // For production applications, a paid image generation service with a stable API is recommended.
     const services = [
         () => generateWithPollinations(enhancedPrompt, dimensions),
-        () => generateWithPicsum(enhancedPrompt, dimensions),
         () => generateWithUnsplash(enhancedPrompt, dimensions)
     ];
 
@@ -127,12 +127,12 @@ async function generateWithPollinations(prompt: string, dimensions: { width: num
     try {
         const encodedPrompt = encodeURIComponent(prompt);
         const seed = Math.floor(Math.random() * 1000000);
-        const imageUrl = `https://image.pollinations.ai/prompt/${encodedPrompt}?width=${dimensions.width}&height=${dimensions.height}&seed=${seed}&enhance=true&nologo=true`;
+        const imageUrl = `https://image.pollinations.ai/prompt/${encodedPrompt}?width=${dimensions.width}&height=${dimensions.height}&seed=${seed}`;
 
         // Test if the image loads
         const testResponse = await Promise.race([
             fetch(imageUrl, { method: 'HEAD' }),
-            new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 5000))
+            new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 8000)) // Increased timeout
         ]) as Response;
         
         if (!testResponse.ok) {
