@@ -60,23 +60,33 @@ export async function generateImageWithGemini(
     }
 }
 
-// Enhanced prompt creation using skincare-specific improvements
+// Enhanced prompt creation focusing on Pakistani Muslim women with Chamkili branding
 function enhancePromptForSkincare(prompt: string, stylePrompt: string, negativePrompt: string): string {
-    const skincareEnhancements = [
-        "high quality photography",
+    // Clean the original prompt to remove product references
+    const cleanPrompt = cleanPromptFromProducts(prompt);
+    
+    const pakMuslimEnhancements = [
+        "beautiful Pakistani Muslim woman",
+        "modest hijab or dupatta",
+        "South Asian features",
+        "warm olive skin tone",
+        "respectful modest clothing",
+        "natural beauty",
+        "professional photography",
         "clean aesthetic",
-        "professional lighting", 
-        "beauty product photography",
-        "Pakistani beauty context",
-        "warm skin tones",
-        "natural lighting"
+        "soft natural lighting",
+        "subtle Chamkili text in corner",
+        "elegant composition"
     ];
     
     const negativeElements = negativePrompt ? negativePrompt.split(',').map(s => s.trim()) : [
-        "blurry", "low quality", "distorted", "text overlay", "watermark"
+        "product bottles", "serum containers", "cream jars", "cosmetic packaging",
+        "explicit products", "brand logos except Chamkili", "western models",
+        "immodest clothing", "revealing outfits", "blurry", "low quality", 
+        "distorted", "watermark", "text overlay except Chamkili"
     ];
     
-    let enhancedPrompt = `${prompt}, ${stylePrompt}, ${skincareEnhancements.join(', ')}`;
+    let enhancedPrompt = `${cleanPrompt}, ${stylePrompt}, ${pakMuslimEnhancements.join(', ')}`;
     
     // Add negative prompt handling
     if (negativeElements.length > 0) {
@@ -84,6 +94,41 @@ function enhancePromptForSkincare(prompt: string, stylePrompt: string, negativeP
     }
     
     return enhancedPrompt;
+}
+
+// Clean prompt from product-specific references
+function cleanPromptFromProducts(prompt: string): string {
+    // Remove product-specific words and replace with general beauty terms
+    const productReplacements: { [key: string]: string } = {
+        'serum': 'skincare routine',
+        'vitamin c serum': 'glowing skin',
+        'niacinamide': 'clear skin',
+        'moisturizer': 'hydrated skin',
+        'cleanser': 'fresh clean skin',
+        'cream': 'soft skin',
+        'bottle': 'beauty',
+        'container': 'beauty',
+        'packaging': 'beauty',
+        'product': 'skincare',
+        'applying serum': 'touching face gently',
+        'using cream': 'skincare routine',
+        'holding bottle': 'natural pose'
+    };
+    
+    let cleanedPrompt = prompt.toLowerCase();
+    
+    // Replace product terms with general beauty terms
+    for (const [product, replacement] of Object.entries(productReplacements)) {
+        const regex = new RegExp(product, 'gi');
+        cleanedPrompt = cleanedPrompt.replace(regex, replacement);
+    }
+    
+    // Ensure Pakistani context is included
+    if (!cleanedPrompt.includes('pakistani') && !cleanedPrompt.includes('south asian')) {
+        cleanedPrompt = 'Pakistani woman ' + cleanedPrompt;
+    }
+    
+    return cleanedPrompt;
 }
 
 // Get style-specific prompt enhancements
@@ -270,34 +315,34 @@ async function generateWithUnsplash(prompt: string, dimensions: { width: number,
     }
 }
 
-// Extract skincare-relevant keywords
+// Extract Pakistani Muslim woman focused keywords
 function extractSkincareKeywords(prompt: string): string[] {
     const promptLower = prompt.toLowerCase();
     
-    // Skincare and beauty focused keyword mapping
+    // Pakistani Muslim women focused keyword mapping
     const keywordMapping: Record<string, string[]> = {
-        'woman': ['beauty', 'skincare', 'portrait'],
-        'women': ['beauty', 'wellness', 'lifestyle'],
-        'skin': ['skincare', 'beauty', 'wellness'],
-        'face': ['beauty', 'skincare', 'portrait'],
-        'serum': ['cosmetics', 'skincare', 'beauty'],
-        'cream': ['moisturizer', 'skincare', 'beauty'],
-        'routine': ['skincare', 'wellness', 'beauty'],
-        'glow': ['radiant', 'beauty', 'healthy'],
-        'radiant': ['glowing', 'beauty', 'healthy'],
-        'clear': ['clean', 'fresh', 'beauty'],
-        'moisturizer': ['hydrating', 'skincare', 'beauty'],
-        'cleanser': ['cleansing', 'skincare', 'fresh'],
-        'natural': ['organic', 'wellness', 'healthy'],
-        'organic': ['natural', 'green', 'wellness'],
-        'products': ['cosmetics', 'beauty', 'skincare'],
-        'bottle': ['cosmetics', 'product', 'beauty'],
-        'pakistani': ['beauty', 'woman', 'culture']
+        'woman': ['pakistani-woman', 'muslim-woman', 'hijab'],
+        'women': ['pakistani-women', 'muslim-women', 'modest-style'],
+        'skin': ['natural-beauty', 'glowing-skin', 'south-asian'],
+        'face': ['pakistani-beauty', 'natural-portrait', 'modest'],
+        'skincare': ['natural-beauty', 'glowing-skin', 'wellness'],
+        'routine': ['self-care', 'beauty-ritual', 'wellness'],
+        'glow': ['radiant-skin', 'natural-beauty', 'healthy'],
+        'radiant': ['glowing', 'natural-beauty', 'confidence'],
+        'clear': ['fresh-skin', 'natural-beauty', 'healthy'],
+        'natural': ['organic', 'pure', 'healthy'],
+        'beauty': ['pakistani-beauty', 'natural-beauty', 'confidence'],
+        'pakistani': ['south-asian', 'muslim-woman', 'cultural-beauty'],
+        'muslim': ['modest-style', 'hijab', 'respectful'],
+        'chamkili': ['brand', 'skincare', 'natural']
     };
     
     let foundKeywords: string[] = [];
     
-    // Find relevant keywords
+    // Always include Pakistani Muslim woman context
+    foundKeywords = ['pakistani-woman', 'muslim-beauty', 'natural-skincare'];
+    
+    // Find additional relevant keywords
     for (const [key, keywords] of Object.entries(keywordMapping)) {
         if (promptLower.includes(key)) {
             foundKeywords = foundKeywords.concat(keywords);
@@ -307,10 +352,10 @@ function extractSkincareKeywords(prompt: string): string[] {
     // Remove duplicates and prioritize
     const uniqueKeywords = [...new Set(foundKeywords)];
     
-    // Return optimized keywords or defaults
-    return uniqueKeywords.length > 0 
-        ? uniqueKeywords.slice(0, 3) 
-        : ['beauty', 'skincare', 'wellness'];
+    // Return optimized keywords with Pakistani context always included
+    return uniqueKeywords.length > 3 
+        ? uniqueKeywords.slice(0, 4) 
+        : ['pakistani-woman', 'muslim-beauty', 'natural-skincare', 'modest-style'];
 }
 
 // Generate semantic seed for consistent image selection
