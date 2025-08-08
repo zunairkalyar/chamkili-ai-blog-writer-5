@@ -14,34 +14,35 @@ export async function generateImageWithGemini(
     imageStyle: string = 'Default',
     negativePrompt: string = ''
 ): Promise<GeminiImageResult> {
-    console.log('Generating image with Gemini API for prompt:', prompt);
+    console.log('🎨 Generating image for prompt:', prompt);
     
     try {
-        const settings = getCurrentSettings();
-        if (!settings.apiKey) {
-            throw new Error("Gemini API key not configured");
-        }
-
-        const genAI = new GoogleGenerativeAI(settings.apiKey);
-        
-        // Use the most cost-effective model for image generation
-        // Note: As of now, Gemini primarily focuses on text generation
-        // For actual image generation, we'll use a combination approach
-        
         const dimensions = getImageDimensions(aspectRatio);
         const stylePrompt = getStylePrompt(imageStyle);
         const enhancedPrompt = enhancePromptForSkincare(prompt, stylePrompt, negativePrompt);
         
-        // Since Gemini doesn't directly generate images yet, we'll use it to create
-        // better prompts for external image generation services or fallback to placeholder
-        console.log('Enhanced prompt for image generation:', enhancedPrompt);
+        console.log('Enhanced prompt:', enhancedPrompt.substring(0, 100) + '...');
         
-        // For now, we'll create a more sophisticated placeholder that uses Gemini-enhanced prompts
-        // with better external services until Gemini native image generation is available
-        return await generateWithExternalService(enhancedPrompt, dimensions, aspectRatio);
+        // Try direct image generation with simplified approach
+        const imageUrl = await generateDirectImage(enhancedPrompt, dimensions);
+        
+        if (imageUrl) {
+            console.log('✅ Successfully generated image');
+            return {
+                success: true,
+                imageUrl: imageUrl
+            };
+        }
+        
+        // Fallback to placeholder
+        console.log('🔄 Using fallback placeholder');
+        return {
+            success: true,
+            imageUrl: generatePlaceholderImage(prompt, aspectRatio)
+        };
         
     } catch (error) {
-        console.error('Gemini image generation error:', error);
+        console.error('❌ Image generation error:', error);
         return {
             success: true, // Still return success with fallback
             imageUrl: generatePlaceholderImage(prompt, aspectRatio)
@@ -86,6 +87,76 @@ function getStylePrompt(imageStyle: string): string {
     };
     
     return styleMap[imageStyle] || styleMap['Default'];
+}
+
+// Direct image generation with simplified approach
+async function generateDirectImage(enhancedPrompt: string, dimensions: { width: number, height: number }): Promise<string | null> {
+    const services = [
+        // Try Pollinations first (most reliable for AI-generated images)
+        async () => {
+            try {
+                const cleanPrompt = enhancedPrompt.split('|')[0].trim(); // Remove negative prompts for URL
+                const encodedPrompt = encodeURIComponent(cleanPrompt.substring(0, 200)); // Limit length
+                const seed = Math.floor(Math.random() * 1000000);
+                const url = `https://image.pollinations.ai/prompt/${encodedPrompt}?width=${dimensions.width}&height=${dimensions.height}&seed=${seed}&nologo=true`;
+                
+                console.log('🔗 Trying Pollinations:', url.substring(0, 100) + '...');
+                
+                // Simple fetch without complex validation
+                const response = await Promise.race([
+                    fetch(url),
+                    new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 10000))
+                ]) as Response;
+                
+                if (response.ok) {
+                    console.log('✅ Pollinations success');
+                    return url;
+                }
+                throw new Error('Response not ok');
+            } catch (error) {
+                console.log('❌ Pollinations failed:', error.message);
+                throw error;
+            }
+        },
+        
+        // Try Unsplash as backup (curated photos)
+        async () => {
+            try {
+                const keywords = extractSkincareKeywords(enhancedPrompt);
+                const query = keywords.join(',');
+                const url = `https://source.unsplash.com/${dimensions.width}x${dimensions.height}/?${encodeURIComponent(query)}`;
+                
+                console.log('🔗 Trying Unsplash with query:', query);
+                
+                // Test if URL is accessible
+                const response = await Promise.race([
+                    fetch(url, { method: 'HEAD' }),
+                    new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 5000))
+                ]) as Response;
+                
+                if (response.ok) {
+                    console.log('✅ Unsplash success');
+                    return url;
+                }
+                throw new Error('Response not ok');
+            } catch (error) {
+                console.log('❌ Unsplash failed:', error.message);
+                throw error;
+            }
+        }
+    ];
+    
+    // Try each service
+    for (const service of services) {
+        try {
+            const result = await service();
+            if (result) return result;
+        } catch (error) {
+            continue; // Try next service
+        }
+    }
+    
+    return null; // All services failed
 }
 
 // Use external services with enhanced prompts
