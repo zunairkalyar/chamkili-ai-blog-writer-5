@@ -132,6 +132,28 @@ export async function createArticle(
   }
   const articleBody = tempDiv.innerHTML;
 
+  // Extract the first image for featured image
+  const firstImg = tempDiv.querySelector('img');
+  let featuredImageUrl: string | null = null;
+  
+  if (firstImg?.src) {
+    console.log('🖼️ Found featured image:', firstImg.src.substring(0, 50) + '...');
+    try {
+      // Upload the image to Shopify and get the CDN URL
+      featuredImageUrl = await uploadImageToShopify(
+        creds,
+        firstImg.src,
+        `featured-${articleTitle.toLowerCase().replace(/[^a-z0-9]/g, '-')}`,
+        firstImg.alt || articleTitle
+      );
+      console.log('✅ Featured image uploaded:', featuredImageUrl.substring(0, 50) + '...');
+    } catch (error) {
+      console.error('❌ Failed to upload featured image:', error);
+      // Use original URL as fallback
+      featuredImageUrl = firstImg.src;
+    }
+  }
+
   const metafields: ShopifyMetafield[] = [];
   if (metaTitle) {
     metafields.push({
@@ -150,16 +172,27 @@ export async function createArticle(
     });
   }
 
-
   const payload = {
     article: {
       title: articleTitle,
       author: 'Chamkili AI Writer',
       body_html: articleBody,
       published: true,
+      ...(featuredImageUrl && { 
+        image: {
+          src: featuredImageUrl,
+          alt: articleTitle
+        }
+      }),
       ...(metafields.length > 0 && { metafields }),
     },
   };
+
+  console.log('📝 Creating article with payload:', {
+    title: articleTitle,
+    hasImage: !!featuredImageUrl,
+    imageUrl: featuredImageUrl?.substring(0, 50) + '...' || 'none'
+  });
 
   const data = await shopifyFetch(`blogs/${blogId}/articles.json`, creds, {
     method: 'POST',
