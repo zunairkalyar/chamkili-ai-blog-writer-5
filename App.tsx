@@ -72,6 +72,8 @@ import { LayoutDashboardIcon } from './components/icons/LayoutDashboardIcon';
 import ShopifyDebugger from './components/ShopifyDebugger';
 import { ImageServiceTester } from './components/ImageServiceTester';
 import { SettingsIcon } from './components/icons/SettingsIcon';
+import AutopilotPanel from './components/AutopilotPanel';
+import { AutopilotIcon } from './components/icons/AutopilotIcon';
 
 
 const TONES = ['Warm & Friendly', 'Professional', 'Playful', 'Scientific', 'Empathetic'];
@@ -1169,6 +1171,13 @@ const App: React.FC = () => {
                         Configure AI Settings
                     </button>
                 </div>
+            </SidebarPanel>
+            
+            <SidebarPanel id="autopilot" title="Autopilot System" icon={<AutopilotIcon className="w-6 h-6"/>}>
+                <AutopilotPanel 
+                    customerPersona={customerPersona}
+                    brandVoiceProfile={brandVoiceProfile}
+                />
             </SidebarPanel>
             
             <SidebarPanel id="shopifySettings" title="Shopify Connection" icon={<ShopifyIcon className="w-6 h-6"/>}>
