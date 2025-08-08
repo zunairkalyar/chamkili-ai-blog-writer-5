@@ -167,3 +167,83 @@ export async function createArticle(
   });
   return data;
 }
+
+// Upload image to Shopify and return the image URL
+export async function uploadImageToShopify(
+  creds: ShopifyCredentials,
+  imageUrl: string,
+  filename: string = 'blog-image',
+  altText: string = 'Blog image'
+): Promise<string> {
+  try {
+    console.log('🔄 Uploading image to Shopify:', imageUrl.substring(0, 50) + '...');
+    
+    // First, fetch the image from the external URL
+    const imageResponse = await fetch(imageUrl);
+    if (!imageResponse.ok) {
+      throw new Error('Failed to fetch image from external URL');
+    }
+    
+    const imageBlob = await imageResponse.blob();
+    const imageBase64 = await blobToBase64(imageBlob);
+    
+    // Remove the data URL prefix if present
+    const base64Data = imageBase64.replace(/^data:[^;]+;base64,/, '');
+    
+    // Create a unique filename
+    const timestamp = Date.now();
+    const extension = getImageExtension(imageBlob.type);
+    const uniqueFilename = `${filename}-${timestamp}.${extension}`;
+    
+    // Upload to Shopify Files API
+    const payload = {
+      file: {
+        filename: uniqueFilename,
+        content_type: imageBlob.type,
+        attachment: base64Data
+      }
+    };
+    
+    const data = await shopifyFetch('files.json', creds, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+    
+    if (data.file && data.file.public_url) {
+      console.log('✅ Image uploaded to Shopify successfully');
+      return data.file.public_url;
+    } else {
+      throw new Error('No public URL returned from Shopify');
+    }
+    
+  } catch (error) {
+    console.error('❌ Failed to upload image to Shopify:', error);
+    // Return original URL as fallback
+    console.log('🔄 Using original image URL as fallback');
+    return imageUrl;
+  }
+}
+
+// Helper function to convert blob to base64
+function blobToBase64(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => resolve(reader.result as string);
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
+}
+
+// Helper function to get file extension from MIME type
+function getImageExtension(mimeType: string): string {
+  const extensions: { [key: string]: string } = {
+    'image/jpeg': 'jpg',
+    'image/jpg': 'jpg',
+    'image/png': 'png',
+    'image/gif': 'gif',
+    'image/webp': 'webp',
+    'image/svg+xml': 'svg'
+  };
+  
+  return extensions[mimeType] || 'jpg';
+}

@@ -1,5 +1,6 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { getCurrentSettings } from './geminiService';
+import { uploadImageToShopify, CHAMKILI_CREDENTIALS } from './shopifyService';
 
 export interface GeminiImageResult {
     success: boolean;
@@ -28,9 +29,18 @@ export async function generateImageWithGemini(
         
         if (imageUrl) {
             console.log('✅ Successfully generated image');
+            
+            // Upload to Shopify and get the Shopify-hosted URL
+            const shopifyImageUrl = await uploadImageToShopify(
+                CHAMKILI_CREDENTIALS,
+                imageUrl,
+                'blog-image',
+                prompt.substring(0, 100) // Use prompt as alt text
+            );
+            
             return {
                 success: true,
-                imageUrl: imageUrl
+                imageUrl: shopifyImageUrl // Use Shopify URL instead of external URL
             };
         }
         
